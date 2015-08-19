@@ -1,0 +1,70 @@
+{
+
+	"simulation": {
+		"duration": 10.0,
+		"dt": 0.1,
+		"seed": 0,
+		"result_location": "./test/hf-results.npz"
+	},
+
+	"ablate": 30,
+
+	"network": {
+		"N": 5000,
+		"Ne": 4000,
+		"Nc": 200
+	},
+
+	"connectivity": {
+		
+		"pSyn": 0.5,
+		"frac_to_spike": 0.05,
+		"g": 5.0,
+		
+		"Wee_factor": 1.0,
+		"Wei_factor": 1.0,
+		"Wie_factor": 1.0,
+		"Wii_factor": 1.0,
+
+		"Wcc_factor": 1.0,
+		"Wce_factor": 1.0,
+		"Wec_factor": 1.0,
+
+		"network_seed": 0
+	},
+
+	"neurons": {
+
+		"tauE": 15.0,
+		"tauI": 10.0,
+		"tauSynE": 3.0,
+		"tauSynI": 2.0,
+
+		"theta": 1.0,
+		"reset": 0.0,
+		"xinf": 1.15, 
+		"refractory": 0.5
+	},
+
+	"stimulus": {
+		
+		"strength": 1.0,
+		"input_factor": 0.5,
+		"interval": 300,
+		"pulse_width": 4,
+		
+		"jitter": {
+			"shape": {
+				"a": 3.0,
+				"b": 5.0
+			},
+			"peak": 2.0
+		}
+
+	},
+
+	"synapses": {
+		"synaptic_delay": 0.6
+	}
+
+}
