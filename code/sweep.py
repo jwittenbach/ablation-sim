@@ -1,9 +1,8 @@
-#! /usr/bin/env python
+#! /usr/bin/env spark-submit
+from pyspark import SparkConf, SparkContext
 
-import json, sys
-from utils import Bunch
+conf=SparkConf().setMaster('local[4]')
+sc = SparkContext(conf=conf)
 
-# get parameters from config file
-fname = sys.argv[1]
-f = open(fname, 'r')
-params = Bunch(json.loads(f.read()))
+data = sc.parallelize([1,2,3])
+print data.collect()
