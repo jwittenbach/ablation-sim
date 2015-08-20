@@ -1,8 +1,8 @@
 #! /usr/bin/env spark-submit
 from pyspark import SparkConf, SparkContext
+import os
 
-conf=SparkConf().setMaster('local[4]')
+with open(os.path.expanduser("~/spark-master")) as f:
+    master = f.read().replace('\n', '')
+conf = SparkConf().setAppName('sweep').setMaster(master)
 sc = SparkContext(conf=conf)
-
-data = sc.parallelize([1,2,3])
-print data.collect()
