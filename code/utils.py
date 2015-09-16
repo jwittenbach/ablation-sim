@@ -1,16 +1,19 @@
 import numpy as np
-import brian2 as b2
+import matplotlib.pyplot as plt
+import seaborn as sns
 from scipy.signal import fftconvolve
 
 class Bunch(object):
     '''
     A class that wraps a dictionary and provides attribute-style access
     '''
+    
     def __init__(self, adict):
         self.__dict__.update(adict)
         for (k, v) in self.__dict__.iteritems():
             if type(v) is dict:
                 self.__dict__[k] = Bunch(v)
+    
     def __repr__(self):
         return self.__dict__.__str__()
 
@@ -61,22 +64,10 @@ def ablateNeuron(ablate, S, Nc):
             S[i][group].w = weights
 
 def newInds(inds, ablate):
-    ablateGrouped = [np.sum(np.logical_and(ablate<inds[i+1], ablate>=inds[i])) for i in xrange(len(inds)-1)]
-    return np.array(inds) - np.cumsum(np.insert(ablateGrouped, 0, 0))
+    return [i - np.sum(ablate<i) for i in inds]
 
-def getSpikeArray(spikes, duration, N, dt, ablated=[]):
-    N -= len(ablated)
-    spikeArray = np.zeros((N, duration/dt))
-    for (i, t) in zip(np.array(spikes.i), 10*spikes.t/b2.ms):
-        if i in ablated:
-            continue
-        i -= sum(np.asarray(ablated) < i)
-        spikeArray[i, int(t)] = 1
-    return spikeArray
-
-def ratesFromSpikes(spikeArray, ker):   
-    rates = np.array([fftconvolve(sp, ker, 'same') for sp in spikeArray])
-    return rates
+def ratesFromSpikes(spikes, ids, i, duration, ker):   
+    return fftconvolve(sp, ker, 'same')
 
 def spikeCounts(spikesArray):
     return np.sum(spikesArray, axis=1)
@@ -128,31 +119,132 @@ def maxCC(signal, window):
 def score(x, y, sampleStep, window):
     x, y = np.squeeze(x), np.squeeze(y)
     x_sampled = x[::sampleStep]
-    y_sampled = y[:,::sampleStep]
-    scores = np.array([maxCC(ccf(x_sampled, y_row), window) for y_row in y_sampled])
-    return np.nan_to_num(scores)
+    y_sampled = y[::sampleStep]
+    score = maxCC(ccf(x_sampled, y_sampled), window)
+    return np.nan_to_num(score)
 
-def xc_score(spikes, stimulus, duration, N, dt, ablated=[]):
-    # make spike array
-    spikeArray = getSpikeArray(spikes, duration, N, dt, ablated)
+def xc_score(spike_times, ids, stimulus, duration, N, dt):
+
+    Nsteps = np.ceil(duration/dt)
+    step = 1000*dt
 
     # make smoothing kernel
     sigma = 20
     L = 7*sigma
-    t = np.arange(-L/2, L/2, dt/b2.ms)
+    t = np.arange(-L/2, L/2, step)
     ker = np.exp(-0.5*np.square(t/sigma))
     ker = ker/np.sum(ker)
 
-    # compute firing rates
-    rates = ratesFromSpikes(spikeArray, ker)
-    
-    # compute scores
-    return score(stimulus, rates, 5, 100)
+    scores = np.zeros(N)
+    for i in xrange(N):
+        
+        # find spike times
+        inds = np.where(ids==i)[0]
+        times = spike_times[inds]
+        spike_train = np.zeros(Nsteps)
+        inds = 1000.0*times/step
+        spike_train[inds.astype('int')] = 1
 
-def spike_score(spikes, onsets, duration, N, dt, ablated=[]):
-    spikeArray = getSpikeArray(spikes, duration, N, dt, ablated)
-    dt = dt/b2.ms
-    onsets = np.floor(np.array(onsets)/dt)
-    window = np.floor(100.0/dt)
-    counts = np.array([np.sum(spikeArray[:, start:start+window], axis=1) for start in onsets])
-    return np.mean(counts, axis=0)
+        # get firing rate
+        rate = fftconvolve(spike_train, ker, 'same')
+
+        # get score
+        scores[i] = score(stimulus, rate, 5, 100)
+
+    return scores
+
+def spike_score(spike_times, ids, onsets, N):
+    window = 0.1
+    offsets = onsets + window
+    counts = np.zeros(N)
+
+    for i in xrange(N):
+        inds = np.where(ids==i)[0]
+        times = spike_times[inds]
+        c = 0
+        for (start, stop) in zip(onsets, offsets):
+            c += np.sum(np.logical_and(start<times, times<stop))
+        counts[i] = c
+    return 1.0*counts/len(onsets)
+
+
+
+# --------------------------------------------------------
+
+def plotSpikes(spike_times, spike_ids, duration=None, N=None, lines=[], ablated=[]):
+    x = spike_times
+    y = spike_ids
+    
+    inds = np.logical_not(np.in1d(y, ablated))
+    x, y = x[inds], y[inds]
+    
+    for i in xrange(y.shape[0]):
+        y[i] -= np.sum(ablated<y[i])
+    
+    plt.scatter(x, y, s=5, c='k')
+    
+    if duration is None:
+        xmax = np.max(x)
+    else:
+        xmax = duration
+    if N is None:
+        ymax = max(y)
+    else:
+        ymax = N
+    
+    c = sns.color_palette()
+    for i in xrange(len(lines)):
+        plt.plot([0, xmax], [lines[i], lines[i]], '--', color=c[i], lw=4);
+    plt.ylabel('neuron #')
+    plt.xlabel('time (s)')
+
+    plt.xlim([0, xmax])
+    plt.ylim([0, ymax])
+    return plt.gca()
+
+def beforeAndAfterPlot(scores_pre, scores_post, inds, labels=None, jitter=None, limits=None, extra=False):
+    
+    n = len(inds)-1
+    
+    if labels is None:
+        l = n*['']
+    else:
+        l = labels
+    
+    
+    if jitter is not None:
+        x = scores_valid + jitter*np.random.randn(len(scores_pre))
+        y = scoresPost + jitter*np.random.randn(len(scores_post))
+    else:
+        x = scores_pre
+        y = scores_post
+
+    if limits is None:
+        min_val = min((min(x), min(y)))-0.02
+        max_val = max((max(x), max(y)))+0.02
+    else:
+        min_val, max_val = limits[0], limits[1]
+    
+    c = sns.color_palette('Set1', n+1)
+    for i in xrange(n):
+        i1, i2 = inds[i], inds[i+1]
+        plt.scatter(x[i1:i2], y[i1:i2], c=c[i], label=l[i], lw=0, alpha=0.5)
+        
+    for i in xrange(n):
+        i1, i2 = inds[i], inds[i+1]
+        plt.scatter(np.mean(x[i1:i2]), np.mean(y[i1:i2]), c=c[i], lw=2, s=200, alpha=0.5)
+
+    if extra is not None:
+        plt.scatter(np.mean(x[inds[1]:]), np.mean(y[inds[1]:]), c=c[n], lw=2, s=200, alpha=0.5)
+    
+    plt.plot([min_val, max_val], [min_val, max_val], 'k--')
+    
+    plt.ylim([min_val, max_val])
+    plt.xlim([min_val, max_val])
+    
+    plt.xlabel('score (pre)')
+    plt.ylabel('score (post)')
+    
+    if labels is not None:
+        plt.legend(loc='upper left')
+
