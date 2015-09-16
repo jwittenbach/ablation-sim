@@ -118,8 +118,8 @@ def set_inputs(t):
 	t_interval = (t/b2.ms) % interval
 	Ge.Iswitch = np.logical_and(Ge.onsets<t_interval, t_interval<Ge.offsets)
 
-Gc.Iext = params.stimulus.strength
-Gu.Iext = params.stimulus.strength * params.stimulus.input_factor
+Gc.Iext = params.stimulus.strength * params.stimulus.input_factor_c
+Gu.Iext = params.stimulus.strength * params.stimulus.input_factor_e
 Gi.Iext = 0
 
 # compute average (across neurons) stimulus
