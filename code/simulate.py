@@ -56,7 +56,8 @@ if type(params.network) is Bunch:
 	
 	print "building network"
 	#compute PSP sizes
-	N_avg_connects = 1.0 * Ntotal * params.connectivity.pSyn
+	pSyn = np.array(params.connectivity.pSyn)
+	N_avg_connects = 1.0 * Ne * pSyn[0][0]
 	N_to_spike = N_avg_connects * params.connectivity.frac_to_spike
 	gap = params.neurons.theta - params.neurons.reset
 
@@ -86,7 +87,7 @@ if type(params.network) is Bunch:
 
 	#create connections
 	np.random.seed(params.connectivity.network_seed)
-	connections = [[np.where(np.random.rand(N[i], N[j]) < params.connectivity.pSyn) for j in xrange(len(N))] for i in xrange(len(N))]
+	connections = [[np.where(np.random.rand(N[i], N[j]) < pSyn[i][j]) for j in xrange(len(N))] for i in xrange(len(N))]
 	weights = [[Wcc, Wce, Wei],
 			   [Wec, Wee, Wei],
 			   [Wie, Wie, Wii]]
