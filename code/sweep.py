@@ -50,10 +50,29 @@ with open(fname, 'r') as f:
 	params = json.loads(f.read())
 
 print params
-print '------------'
 locs, vals = getLists(params)
+
+inds, l_del, v_del = [], [], []
+
+for (l, v) in zip(locs, vals):
+	if v[0] == 'yoke':
+		for (idx, match) in enumerate(locs):
+			if match[-1] == v[1]:
+				inds.append(idx)
+				l_del.append(l)
+				v_del.append(v)
+				break
+
+locs = [(l,) for l in locs]
+for (idx, l, v) in zip(inds, l_del, v_del):
+	locs[idx] += (l,)
+	locs.remove((l,))
+	vals.remove(v)
+
+print '--------------'
 print locs
 print vals
+
 
 output_location = os.path.abspath(params["simulation"]["result_location"])
 if output_location[-1] != '/':
@@ -72,7 +91,8 @@ for p in product(*labeled_vals):
 	
 	d = deepcopy(params)
 	for (k, v) in zip(locs, values):
-		setDict(d, k, v)
+		for k_sub in k:
+			setDict(d, k_sub, v)
 	setDict(d, ('simulation', 'result_location'), output_location + 'result-' + suffix + '.npz')
 
 	with open(param_files[-1], 'w') as f:
@@ -89,7 +109,7 @@ script = sys.argv[1]
 try:
 	mode = sys.argv[3]
 except:
-	mode = 'local'
+	mode = 'test'
 
 if mode == 'local':
 
@@ -113,9 +133,13 @@ elif mode == 'spark':
 	n_sims = len(param_files)
 	print sc.parallelize(param_files, numSlices=n_sims).map(lambda f: run_sim(script, f, basepath=basepath)).collect()
 
+elif mode == 'test':
+	pass
+
 with open(output_location+'ordering.npz', 'w') as f:
 	np.savez(f, params=np.array(locs, dtype='object'), values=np.array(vals))
 
 for name in param_files:
-	subprocess.check_output('rm ' + name, shell=True)
+	#subprocess.check_output('rm ' + name, shell=True)
+	pass
 

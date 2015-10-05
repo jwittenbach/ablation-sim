@@ -57,6 +57,7 @@ if type(params.network) is Bunch:
 	print "building network"
 	#compute PSP sizes
 	pSyn = np.array(params.connectivity.pSyn)
+	print pSyn
 	N_avg_connects = 1.0 * Ne * pSyn[0][0]
 	N_to_spike = N_avg_connects * params.connectivity.frac_to_spike
 	gap = params.neurons.theta - params.neurons.reset
@@ -177,15 +178,15 @@ Net = b2.Network(G, S)
 Net.add(set_inputs)
 
 print "creating monitors"
-#monitor = b2.StateMonitor(G, 'x', record=True)
-#monitorE = b2.StateMonitor(G, 'IsynE', record=True)
-#monitorI = b2.StateMonitor(G, 'IsynI', record=True)
+monitor = b2.StateMonitor(G, 'x', record=True)
+monitorE = b2.StateMonitor(G, 'IsynE', record=True)
+monitorI = b2.StateMonitor(G, 'IsynI', record=True)
 spikes = b2.SpikeMonitor(G)
 
 print "adding monitors"
-#Net.add(monitor)
-#Net.add(monitorE)
-#Net.add(monitorI)
+Net.add(monitor)
+Net.add(monitorE)
+Net.add(monitorI)
 Net.add(spikes)
 
 # store initial configuration
@@ -208,7 +209,7 @@ spike_scores_pre = spike_score(spike_times_pre, spike_ids_pre, stim_onsets, Ntot
 results = {}
 results.update(spike_times_pre=spike_times_pre, spike_ids_pre=spike_ids_pre, stimulus=stim,
 	xc_scores_pre=xc_scores_pre, spike_scores_pre=spike_scores_pre)
-#	monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE), monitorI_pre=np.asarray(monitorI.IsynI))
+	#monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE), monitorI_pre=np.asarray(monitorI.IsynI))
 
 if params.ablate is not -1:
 	# reset network
