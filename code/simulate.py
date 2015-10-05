@@ -85,13 +85,15 @@ if type(params.network) is Bunch:
 	Wcc = params.connectivity.Wcc_factor * Wee
 	Wce = params.connectivity.Wce_factor * Wee
 	Wec = params.connectivity.Wec_factor * Wee
+	Wci = params.connectivity.Wci_factor * Wei
+	Wic = params.connectivity.Wic_factor * Wic
 
 	#create connections
 	np.random.seed(params.connectivity.network_seed)
 	connections = [[np.where(np.random.rand(N[i], N[j]) < pSyn[i][j]) for j in xrange(len(N))] for i in xrange(len(N))]
-	weights = [[Wcc, Wce, Wei],
+	weights = [[Wcc, Wce, Wci],
 			   [Wec, Wee, Wei],
-			   [Wie, Wie, Wii]]
+			   [Wic, Wie, Wii]]
 
 # create synapses
 pre_strings = ["IsynE+=w", "IsynI+=w"]
