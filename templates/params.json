@@ -29,6 +29,8 @@
 		"Wcc_factor": 1.0,
 		"Wce_factor": 1.0,
 		"Wec_factor": 1.0,
+		"Wci_factor": 1.0,
+		"Wic_factor": 1.0,
 
 		"network_seed": 0
 	},
@@ -42,14 +44,16 @@
 
 		"theta": 1.0,
 		"reset": 0.0,
-		"xinf": 1.15, 
+		"xinf_e": 1.15, 
+		"xinf_i": 1.15,
 		"refractory": 0.5
 	},
 
 	"stimulus": {
 		
 		"strength": 1.0,
-		"input_factor": 0.5,
+		"input_factor_e": 0.5,
+		"input_factor_c": 0.5,
 		"interval": 300,
 		"pulse_width": 4,
 		

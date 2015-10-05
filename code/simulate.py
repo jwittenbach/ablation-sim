@@ -86,7 +86,7 @@ if type(params.network) is Bunch:
 	Wce = params.connectivity.Wce_factor * Wee
 	Wec = params.connectivity.Wec_factor * Wee
 	Wci = params.connectivity.Wci_factor * Wei
-	Wic = params.connectivity.Wic_factor * Wic
+	Wic = params.connectivity.Wic_factor * Wie
 
 	#create connections
 	np.random.seed(params.connectivity.network_seed)
@@ -165,7 +165,8 @@ reset = params.neurons.reset
 np.random.seed(params.simulation.init_seed)
 G.x = np.random.rand(Ntotal)
 
-G.xinf = params.neurons.xinf
+Ge.xinf = params.neurons.xinf_e
+Gi.xinf = params.neurons.xinf_i
 
 Gc.tau = tauE*b2.ms
 Gu.tau = tauE*b2.ms
