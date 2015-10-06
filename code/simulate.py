@@ -219,7 +219,7 @@ results.update(spike_times_pre=spike_times_pre, spike_ids_pre=spike_ids_pre, sti
 	xc_scores_pre=xc_scores_pre, spike_scores_pre=spike_scores_pre)
 if params.simulation.save_all:
 	results.update(monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE),
-		monitorI_pre=np.asarray(monitorI.IsynI), monitorExt_pre=np.asarray(monitorIext.Iext)+np.asarray(monitorIswitch.Iswitch))
+		monitorI_pre=np.asarray(monitorI.IsynI), monitorExt_pre=np.asarray(monitorIext.Iext)*np.asarray(monitorIswitch.Iswitch))
 
 if params.ablate is not -1:
 	# reset network
@@ -249,7 +249,7 @@ if params.ablate is not -1:
 		xc_scores_post=xc_scores_post, spike_scores_post=spike_scores_post)
 	if params.simulation.save_all:
 		results.update(monitor_post=np.asarray(monitor.x), monitorE_post=np.asarray(monitorE.IsynE),
-			monitorI_post=np.asarray(monitorI.IsynI), monitorExt_post=np.asarray(monitorIext.Iext)+np.asarray(monitorIswitch.Iswitch))
+			monitorI_post=np.asarray(monitorI.IsynI), monitorExt_post=np.asarray(monitorIext.Iext)*np.asarray(monitorIswitch.Iswitch))
 
 if not params.simulation.result_location == 0:
 	print "writing results"
