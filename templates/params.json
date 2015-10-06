@@ -4,6 +4,7 @@
 		"duration": 3.0,
 		"dt": 0.1,
 		"seed": 0,
+		"save_all": 0,
 		"result_location": "./test/hf-results.npz"
 	},
 

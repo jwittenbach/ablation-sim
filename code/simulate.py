@@ -181,9 +181,10 @@ Net = b2.Network(G, S)
 Net.add(set_inputs)
 
 print "creating monitors"
-monitor = b2.StateMonitor(G, 'x', record=True)
-monitorE = b2.StateMonitor(G, 'IsynE', record=True)
-monitorI = b2.StateMonitor(G, 'IsynI', record=True)
+if params.simulation.save_all:
+	monitor = b2.StateMonitor(G, 'x', record=True)
+	monitorE = b2.StateMonitor(G, 'IsynE', record=True)
+	monitorI = b2.StateMonitor(G, 'IsynI', record=True)
 spikes = b2.SpikeMonitor(G)
 
 print "adding monitors"
@@ -212,7 +213,8 @@ spike_scores_pre = spike_score(spike_times_pre, spike_ids_pre, stim_onsets, Ntot
 results = {}
 results.update(spike_times_pre=spike_times_pre, spike_ids_pre=spike_ids_pre, stimulus=stim,
 	xc_scores_pre=xc_scores_pre, spike_scores_pre=spike_scores_pre)
-	#monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE), monitorI_pre=np.asarray(monitorI.IsynI))
+if params.simulation.save_all:
+	results.update(monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE), monitorI_pre=np.asarray(monitorI.IsynI))
 
 if params.ablate is not -1:
 	# reset network
@@ -240,7 +242,8 @@ if params.ablate is not -1:
 
 	results.update(spike_times_post=spike_times_post, spike_ids_post=spike_ids_post, ablated=ablate,
 		xc_scores_post=xc_scores_post, spike_scores_post=spike_scores_post)
-		#monitor_post=np.asarray(monitor.x), monitorE_post=np.asarray(monitorE.IsynE), monitorI_post=np.asarray(monitorI.IsynI))
+	if params.simulation.save_all:
+		results.update(monitor_post=np.asarray(monitor.x), monitorE_post=np.asarray(monitorE.IsynE), monitorI_post=np.asarray(monitorI.IsynI))
 
 if not params.simulation.result_location == 0:
 	print "writing results"
