@@ -185,12 +185,16 @@ if params.simulation.save_all:
 	monitor = b2.StateMonitor(G, 'x', record=True)
 	monitorE = b2.StateMonitor(G, 'IsynE', record=True)
 	monitorI = b2.StateMonitor(G, 'IsynI', record=True)
+	monitorIext = b2.StateMonitor(G, 'Iext', record=True)
+	monitorIswitch = b2.StateMonitor(G, 'Iswitch', record=True)
 spikes = b2.SpikeMonitor(G)
 
 print "adding monitors"
 Net.add(monitor)
 Net.add(monitorE)
 Net.add(monitorI)
+Net.add(monitorIext)
+Net.add(monitorIswitch)
 Net.add(spikes)
 
 # store initial configuration
@@ -214,7 +218,8 @@ results = {}
 results.update(spike_times_pre=spike_times_pre, spike_ids_pre=spike_ids_pre, stimulus=stim,
 	xc_scores_pre=xc_scores_pre, spike_scores_pre=spike_scores_pre)
 if params.simulation.save_all:
-	results.update(monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE), monitorI_pre=np.asarray(monitorI.IsynI))
+	results.update(monitor_pre=np.asarray(monitor.x), monitorE_pre=np.asarray(monitorE.IsynE),
+		monitorI_pre=np.asarray(monitorI.IsynI), monitorExt_pre=np.asarray(monitorIext.Iext)+np.asarray(monitorIswitch.Iswitch))
 
 if params.ablate is not -1:
 	# reset network
@@ -243,7 +248,8 @@ if params.ablate is not -1:
 	results.update(spike_times_post=spike_times_post, spike_ids_post=spike_ids_post, ablated=ablate,
 		xc_scores_post=xc_scores_post, spike_scores_post=spike_scores_post)
 	if params.simulation.save_all:
-		results.update(monitor_post=np.asarray(monitor.x), monitorE_post=np.asarray(monitorE.IsynE), monitorI_post=np.asarray(monitorI.IsynI))
+		results.update(monitor_post=np.asarray(monitor.x), monitorE_post=np.asarray(monitorE.IsynE),
+			monitorI_post=np.asarray(monitorI.IsynI), monitorExt_post=np.asarray(monitorIext.Iext)+np.asarray(monitorIswitch.Iswitch))
 
 if not params.simulation.result_location == 0:
 	print "writing results"

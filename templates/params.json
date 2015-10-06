@@ -3,7 +3,8 @@
 	"simulation": {
 		"duration": 3.0,
 		"dt": 0.1,
-		"seed": 0,
+		"init_seed": 0,
+		"phase_seed": 0,
 		"save_all": 0,
 		"result_location": "./test/hf-results.npz"
 	},
