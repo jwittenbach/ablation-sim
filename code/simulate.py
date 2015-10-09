@@ -152,7 +152,8 @@ while True:
 	stop = start + stim_duration
 	if stop > sim_duration:
 		break
-	stim[start:stop] += single_stim
+	#stim[start:stop] += single_stim
+	stim[start:stop] += stretch_factor*beta.pdf(1.0*np.arange(stim_duration)/(stim_duration-1), a, b)
 	stim0[start+extra:start+extra+pulse_duration] = pulse
 	i += 1
 
@@ -190,11 +191,12 @@ if params.simulation.save_all:
 spikes = b2.SpikeMonitor(G)
 
 print "adding monitors"
-Net.add(monitor)
-Net.add(monitorE)
-Net.add(monitorI)
-Net.add(monitorIext)
-Net.add(monitorIswitch)
+if params.simulation.save_all:
+	Net.add(monitor)
+	Net.add(monitorE)
+	Net.add(monitorI)
+	Net.add(monitorIext)
+	Net.add(monitorIswitch)
 Net.add(spikes)
 
 # store initial configuration
