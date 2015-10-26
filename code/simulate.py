@@ -34,6 +34,7 @@ model = '''
      	offsets: 1
      	Iext: 1
      	Iswitch: 1
+     	theta: 1
      	'''
 
 Nc = params.network.Nc
@@ -107,44 +108,21 @@ for i in xrange(len(N)):
 
 # create ths stimulus
 print "setting up the stimulus"
+
 a, b = params.stimulus.jitter.shape.a, params.stimulus.jitter.shape.b
 peak0 = 1.0*(a-1)/(a+b-2)
 stretch_factor = params.stimulus.jitter.peak/peak0
 interval = params.stimulus.interval
-pulse_width = params.stimulus.pulse_width
 
-np.random.seed(params.simulation.phase_seed)
-Ge.onsets = stretch_factor * beta.rvs(a, b, size=Ne)
-Ge.offsets = Ge.onsets + pulse_width
-
-@b2.network_operation(dt=dt)
-def set_inputs(t):
-	t_interval = (t/b2.ms) % interval
-	Ge.Iswitch = np.logical_and(Ge.onsets<t_interval, t_interval<Ge.offsets)
-
-Gc.Iext = params.stimulus.strength * params.stimulus.input_factor_c
-Gu.Iext = params.stimulus.strength * params.stimulus.input_factor_e
-Gi.Iext = 0
-
-# compute average (across neurons) stimulus
+# compute stimulus time-course
 step = dt/b2.ms
 beta_duration = int(np.ceil(stretch_factor/step))
-pulse_duration = int(np.ceil(pulse_width/step))
-stim_duration = beta_duration + pulse_duration
+stim_duration = beta_duration
 interval_duration = int(np.ceil(interval/step))
-pulse = np.ones(pulse_duration)
-single_stim = np.zeros(stim_duration)
-
-#for i in xrange(beta_duration):
-#	single_stim[i:i+pulse_duration] += beta.pdf(i*step/stretch_factor, a, b)*pulse
-for (start, stop) in zip(np.array(Ge.onsets), np.array(Ge.offsets)):
-	single_stim[start:stop] += 1.0
-single_stim /= np.sum(single_stim)
-
 sim_duration = int(np.ceil(duration/dt))
 stim = np.zeros(sim_duration)
-stim0 = np.zeros(sim_duration)
-extra = np.ceil(peak0*stretch_factor/step)
+
+single_stim = beta.pdf(1.0*np.arange(stim_duration)/(stim_duration-1), a, b)
 
 i = 0
 while True:
@@ -152,25 +130,62 @@ while True:
 	stop = start + stim_duration
 	if stop > sim_duration:
 		break
-	#stim[start:stop] += single_stim
-	stim[start:stop] += stretch_factor*beta.pdf(1.0*np.arange(stim_duration)/(stim_duration-1), a, b)
-	stim0[start+extra:start+extra+pulse_duration] = pulse
+	stim[start:stop] += single_stim
 	i += 1
+stim = stim/(params.simulation.dt*np.sum(single_stim))
 
 stim_onsets = np.arange(0, duration/b2.second, interval/1000.0)
 
+if params.stimulus.stim_type == "pulsed":
+	pulse_width = params.stimulus.pulse_width
+	pulse_duration = int(np.ceil(pulse_width/step))
+
+	np.random.seed(params.simulation.phase_seed)
+	onsets_base = stretch_factor * beta.rvs(a, b, size=Ne)
+	Ge.onsets = onsets_base + params.stimulus.jitter.variance * np.random.randn(Ne)
+	Ge.offsets = Ge.onsets + pulse_width
+
+	@b2.network_operation(dt=interval*b2.ms)
+	def jitter_inputs(t):
+		print "jittering: t = " + str(t)
+		Ge.onsets = onsets_base + params.stimulus.jitter.variance * np.random.randn(Ne)
+		Ge.offsets = Ge.onsets + pulse_width
+
+	@b2.network_operation(dt=dt)
+	def set_inputs(t):
+		t_interval = (t/b2.ms) % interval
+		Ge.Iswitch = np.logical_and(Ge.onsets<t_interval, t_interval<Ge.offsets)
+
+	Gc.Iext = params.stimulus.strength * params.stimulus.input_factor_c
+	Gu.Iext = params.stimulus.strength * params.stimulus.input_factor_e
+	Gi.Iext = 0
+
+if params.stimulus.stim_type == "continuous":
+
+	Gc.Iswitch = params.stimulus.strength * params.stimulus.input_factor_c
+	Gu.Iswitch = params.stimulus.strength * params.stimulus.input_factor_e
+	Gi.Iswitch = 0
+
+	@b2.network_operation(dt=dt)
+	def set_inputs(t):
+		G.Iext = stim[int(10*(t/b2.ms))]
+
 # initialize neurons
-theta = params.neurons.theta
+np.random.seed(params.simulation.init_seed)
+r = 0.1
+
+#theta = params.neurons.theta
+G.theta = params.neurons.theta*(1+r*(2*np.random.rand(Ntotal)-1))
 reset = params.neurons.reset
 
-np.random.seed(params.simulation.init_seed)
 G.x = np.random.rand(Ntotal)
 
-Ge.xinf = params.neurons.xinf_e
-Gi.xinf = params.neurons.xinf_i
+# Ge.xinf = params.neurons.xinf_e
+# Gi.xinf = params.neurons.xinf_i
+Ge.xinf = params.neurons.xinf_e*(1+r*(2*np.random.rand(Ne)-1))
+Gi.xinf = params.neurons.xinf_i*(1+r*(2*np.random.rand(Ni)-1))
 
-Gc.tau = tauE*b2.ms
-Gu.tau = tauE*b2.ms
+Ge.tau = tauE*b2.ms
 Gi.tau = tauI*b2.ms
 
 G.tauSynE = tauSynE*b2.ms
@@ -179,6 +194,7 @@ G.tauSynI = tauSynI*b2.ms
 # create network
 print "creating network"
 Net = b2.Network(G, S)
+Net.add(jitter_inputs)
 Net.add(set_inputs)
 
 print "creating monitors"
@@ -231,6 +247,7 @@ if params.ablate is not -1:
 	# ablate high-scoring neurons
 	print "ablating neurons"
 	ablate = np.argsort(spike_scores_pre[:Ne].T)[::-1][:params.ablate]
+	#ablate = np.argsort(spike_scores_pre[:Nc].T)[::-1][:params.ablate]
 	#ablate = np.arange(params.ablate)
 	ablateNeuron(ablate, S, Nc)
 

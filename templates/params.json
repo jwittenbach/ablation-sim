@@ -53,6 +53,7 @@
 
 	"stimulus": {
 		
+		"stim_type": "continuous",
 		"strength": 1.0,
 		"input_factor_e": 0.5,
 		"input_factor_c": 0.5,
@@ -64,6 +65,7 @@
 				"a": 3.0,
 				"b": 5.0
 			},
+			"variance": 1.0,
 			"peak": 2.0
 		}
 

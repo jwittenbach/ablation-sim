@@ -72,7 +72,7 @@ def ratesFromSpikes(spikes, ids, i, duration, ker):
 def spikeCounts(spikesArray):
     return np.sum(spikesArray, axis=1)
 
-def ccf(x, y, axis=None):
+def ccf(x, y, axis=None, normalize=True):
     assert x.ndim == y.ndim, "Inconsistent shape !"
 #    assert(x.shape == y.shape, "Inconsistent shape !")
     if axis is None:
@@ -110,20 +110,23 @@ def ccf(x, y, axis=None):
     if varxy < 0.001:
         return np.zeros(len(iFxy))
     else:
-        return iFxy / varxy
+        if normalize:
+            return iFxy / varxy
+        else:
+            return iFxy
         
 def maxCC(signal, window):
     middle = len(signal)/2
     return max(signal[middle-window:middle+window])
 
-def score(x, y, sampleStep, window):
+def score(x, y, sampleStep, window, normalize=True):
     x, y = np.squeeze(x), np.squeeze(y)
     x_sampled = x[::sampleStep]
     y_sampled = y[::sampleStep]
-    score = maxCC(ccf(x_sampled, y_sampled), window)
+    score = maxCC(ccf(x_sampled, y_sampled), window, normalize)
     return np.nan_to_num(score)
 
-def xc_score(spike_times, ids, stimulus, duration, N, dt):
+def xc_score(spike_times, ids, stimulus, duration, N, dt, normalize=True):
 
     Nsteps = np.ceil(duration/dt)
     step = 1000*dt
@@ -149,7 +152,8 @@ def xc_score(spike_times, ids, stimulus, duration, N, dt):
         rate = fftconvolve(spike_train, ker, 'same')
 
         # get score
-        scores[i] = score(stimulus, rate, 5, 100)
+        scores[i] = score(stimulus, rate, 5, 20, normalize)
+        #scores[i] = score(stimulus, rate, 1, 1, normalize)
 
     return scores
 
