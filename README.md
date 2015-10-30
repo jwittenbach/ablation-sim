@@ -7,4 +7,4 @@ Simulating ablations in a balanced network of integrate-and-fire neurons
 - results: notebooks, figures, and corresponding parameter settings
 
 ### notes
-- due to size constraints, data used to produce results are not included in the reposityr
+- due to size constraints, data used to produce results are not included in the repository 

@@ -72,7 +72,7 @@ def ratesFromSpikes(spikes, ids, i, duration, ker):
 def spikeCounts(spikesArray):
     return np.sum(spikesArray, axis=1)
 
-def ccf(x, y, axis=None, normalize=True):
+def ccf(x, y, normalize=True, axis=None) :
     assert x.ndim == y.ndim, "Inconsistent shape !"
 #    assert(x.shape == y.shape, "Inconsistent shape !")
     if axis is None:
@@ -123,7 +123,7 @@ def score(x, y, sampleStep, window, normalize=True):
     x, y = np.squeeze(x), np.squeeze(y)
     x_sampled = x[::sampleStep]
     y_sampled = y[::sampleStep]
-    score = maxCC(ccf(x_sampled, y_sampled), window, normalize)
+    score = maxCC(ccf(x_sampled, y_sampled, normalize), window)
     return np.nan_to_num(score)
 
 def xc_score(spike_times, ids, stimulus, duration, N, dt, normalize=True):

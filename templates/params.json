@@ -6,6 +6,7 @@
 		"init_seed": 0,
 		"phase_seed": 0,
 		"save_all": 0,
+		"corr_coef": 1,
 		"result_location": "./test/hf-results.npz"
 	},
 
