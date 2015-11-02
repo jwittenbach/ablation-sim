@@ -56,13 +56,7 @@ Glist = [Gc, Gu, Gi]
 if type(params.network) is Bunch:
 	
 	print "building network"
-	#compute PSP sizes
-	pSyn = np.array(params.connectivity.pSyn)
-	N_avg_connects = 1.0 * Ne * pSyn[0][0]
-	N_to_spike = N_avg_connects * params.connectivity.frac_to_spike
-	gap = params.neurons.theta - params.neurons.reset
-
-	J = gap / N_to_spike
+	J = params.connectivity.J
 	
 	Jee, Jei = J, J
 	Jie, Jii = -params.connectivity.g*J, - params.connectivity.g*J
@@ -89,9 +83,6 @@ if type(params.network) is Bunch:
 	Wic = params.connectivity.Wic_factor * Wie
 
 	#print results
-	print "N_avg_connects:\t" + str(N_avg_connects)
-	print "N_to_spike:\t" + str(N_to_spike)
-	print "gap:\t" + str(gap)
 	print "J:\t" + str(J)
 	print "Ji:\t" + str(Jii)
 	print "Wee (init):\t" + str(psp_to_current(Jee, tauE/tauSynE))
@@ -99,6 +90,7 @@ if type(params.network) is Bunch:
 
 	#create connections
 	np.random.seed(params.connectivity.network_seed)
+	pSyn = params.connectivity.pSyn
 	connections = [[np.where(np.random.rand(N[i], N[j]) < pSyn[i][j]) for j in xrange(len(N))] for i in xrange(len(N))]
 	weights = [[Wcc, Wce, Wci],
 			   [Wec, Wee, Wei],
@@ -107,12 +99,17 @@ if type(params.network) is Bunch:
 # create synapses
 pre_strings = ["IsynE+=w", "IsynI+=w"]
 S = []
+r = 0.5
 for i in xrange(len(N)):
 	S.append([])
 	for j in xrange(len(N)):
-		S[i].append(b2.Synapses(Glist[i], Glist[j], model="w: 1", pre=pre_strings[int(i==2)], dt=dt, delay=params.synapses.synaptic_delay*b2.ms))
+		#S[i].append(b2.Synapses(Glist[i], Glist[j], model="w: 1", pre=pre_strings[int(i==2)], dt=dt, delay=params.synapses.synaptic_delay*b2.ms))
+		S[i].append(b2.Synapses(Glist[i], Glist[j], model="w: 1", pre=pre_strings[int(i==2)], dt=dt))
 		S[i][j].connect(*connections[i][j])
 		S[i][j].w = weights[i][j]
+		Nsynapses = len(S[i][j].i)
+		delays = params.synapses.synaptic_delay*(1+r*(2*np.random.rand(Nsynapses)-2))
+		S[i][j].delay = delays*b2.ms
 
 # create ths stimulus
 print "setting up the stimulus"
@@ -121,6 +118,8 @@ a, b = params.stimulus.jitter.shape.a, params.stimulus.jitter.shape.b
 peak0 = 1.0*(a-1)/(a+b-2)
 stretch_factor = params.stimulus.jitter.peak/peak0
 interval = params.stimulus.interval
+
+print 'stretch factor:\t' + str(stretch_factor)
 
 # compute stimulus time-course
 step = dt/b2.ms
@@ -185,8 +184,8 @@ if params.stimulus.stim_type == "continuous":
 fExc = params.drive.fExc*np.ones(Ne)
 fInh = params.drive.fInh*np.ones(Ni)
 f = np.concatenate([fExc, fInh])*b2.Hz
-P = b2.PoissonGroup(Ntotal, f)
-Sdrive = b2.Synapses(P, G, model='w:1', pre='IsynE+=w', connect='i==j')
+P = b2.PoissonGroup(Ntotal, f, dt=dt)
+Sdrive = b2.Synapses(P, G, model='w:1', pre='IsynE+=w', connect='i==j', dt=dt)
 Sdrive.w = params.drive.str_factor*psp_to_current(Jee, tauE/tauSynE)
 print "Wee:"
 print Wee
@@ -196,11 +195,12 @@ np.random.seed(params.simulation.init_seed)
 r = 0.1
 
 #theta = params.neurons.theta
-#G.theta = params.neurons.theta*(1+r*(2*np.random.rand(Ntotal)-1))
-G.theta = params.neurons.theta
+G.theta = params.neurons.theta*(1+r*(2*np.random.rand(Ntotal)-1))
+#G.theta = params.neurons.theta
 reset = params.neurons.reset
 
-G.x = 0.5*np.random.rand(Ntotal)
+#G.x = 0.5*np.random.rand(Ntotal)
+G.x = 0.75*params.neurons.theta*np.random.rand(Ntotal)
 #G.x = 0
 
 Ge.xinf = params.neurons.xinf_e
@@ -254,7 +254,7 @@ normalize = bool(params.simulation.corr_coef)
 print "computing scores - xc"
 xc_scores_pre = xc_score(spike_times_pre, spike_ids_pre, stim, duration/b2.second, Ntotal, dt/b2.second, normalize)
 print "computing scores - spikes"
-spike_scores_pre = spike_score(spike_times_pre, spike_ids_pre, stim_onsets, Ntotal)
+spike_scores_pre = spike_score(spike_times_pre, spike_ids_pre, stim_onsets, Ntotal, stretch_factor/1000.0)
 
 # write result
 results = {}
@@ -287,7 +287,7 @@ if params.ablate is not -1:
 	# compute scores
 	print "computing scores -- take, the second"
 	xc_scores_post = xc_score(spike_times_post, spike_ids_post, stim, duration/b2.second, Ntotal, dt/b2.second, normalize)
-	spike_scores_post = spike_score(spike_times_post, spike_ids_post, stim_onsets, Ntotal)
+	spike_scores_post = spike_score(spike_times_post, spike_ids_post, stim_onsets, Ntotal, stretch_factor/1000.0)
 
 	results.update(spike_times_post=spike_times_post, spike_ids_post=spike_ids_post, ablated=ablate,
 		xc_scores_post=xc_scores_post, spike_scores_post=spike_scores_post)

@@ -157,8 +157,7 @@ def xc_score(spike_times, ids, stimulus, duration, N, dt, normalize=True):
 
     return scores
 
-def spike_score(spike_times, ids, onsets, N):
-    window = 0.1
+def spike_score(spike_times, ids, onsets, N, window):
     offsets = onsets + window
     counts = np.zeros(N)
 
