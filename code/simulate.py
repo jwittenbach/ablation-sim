@@ -95,7 +95,9 @@ if type(params.network) is Bunch:
 	weights = [[Wcc, Wce, Wci],
 			   [Wec, Wee, Wei],
 			   [Wic, Wie, Wii]]
-
+	print 'weights:'
+	for row in weights:
+		print row
 # create synapses
 pre_strings = ["IsynE+=w", "IsynI+=w"]
 S = []
@@ -192,7 +194,7 @@ print Wee
 
 # initialize neurons
 np.random.seed(params.simulation.init_seed)
-r = 0.1
+r = 0.5
 
 #theta = params.neurons.theta
 G.theta = params.neurons.theta*(1+r*(2*np.random.rand(Ntotal)-1))
@@ -200,7 +202,7 @@ G.theta = params.neurons.theta*(1+r*(2*np.random.rand(Ntotal)-1))
 reset = params.neurons.reset
 
 #G.x = 0.5*np.random.rand(Ntotal)
-G.x = 0.75*params.neurons.theta*np.random.rand(Ntotal)
+G.x = 0.5*params.neurons.theta*np.random.rand(Ntotal)
 #G.x = 0
 
 Ge.xinf = params.neurons.xinf_e
@@ -271,8 +273,9 @@ if params.ablate is not -1:
 
 	# ablate high-scoring neurons
 	print "ablating neurons"
-	ablate = np.argsort(spike_scores_pre[:Ne].T)[::-1][:params.ablate]
+	#ablate = np.argsort(spike_scores_pre[:Ne].T)[::-1][:params.ablate]
 	#ablate = np.argsort(spike_scores_pre[:Nc].T)[::-1][:params.ablate]
+	ablate = np.argsort(xc_scores_pre[:Ne].T)[::-1][:params.ablate]
 	#ablate = np.arange(params.ablate)
 	ablateNeuron(ablate, S, Nc)
 

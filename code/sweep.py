@@ -1,98 +1,25 @@
 import os, sys, json, subprocess
-from itertools import product
-from copy import deepcopy
 import numpy as np
-
-def sliceToList(s):
-	if len(s) == 1:
-		start = 0
-		stop = s[0]
-		step = 1
-	if len(s) == 2:
-		start = s[0]
-		stop = s[1]
-		step = 1
-	if len(s) == 3:
-		start = s[0]
-		stop = s[1]
-		step = s[2]
-	return np.arange(start, stop, step).tolist()
-
-def getLists(d, l=[]):
-	locs = []
-	vals = []
-	for k in d:
-		data = d[k]
-		new_path = l+[k]
-		if type(data) is list:
-			locs += [new_path]
-			if data[0] == 'slice':
-				vals += [sliceToList(data[1:])]
-			else:
-				vals += [data]
-		elif type(data) is dict:
-			new_lists, new_data = getLists(data, new_path)
-			for n, dat in zip(new_lists, new_data):
-				locs += [n]
-				vals += [dat]
-	return locs, vals
-
-def setDict(d, k, v):
-	'side effect warning: changes the passed in dictionary'
-	ptr = d
-	for l in k[:-1]:
-		ptr = ptr[l]
-	ptr[k[-1]] = v
+from sweep_utils import makeDicts, setDict
 
 # get parameters from config file
-fname = sys.argv[2]
+script, fname = sys.argv[1:3]
 with open(fname, 'r') as f:
 	params = json.loads(f.read())
 
-print params
-locs, vals = getLists(params)
-
-inds, l_del, v_del = [], [], []
-
-for (l, v) in zip(locs, vals):
-	if v[0] == 'yoke':
-		for (idx, match) in enumerate(locs):
-			if match[-1] == v[1]:
-				inds.append(idx)
-				l_del.append(l)
-				v_del.append(v)
-				break
-
-locs = [(l,) for l in locs]
-for (idx, l, v) in zip(inds, l_del, v_del):
-	locs[idx] += (l,)
-	locs.remove((l,))
-	vals.remove(v)
-
-print '--------------'
-print locs
-print vals
-
+# create a new dictionary for every parameter setting
+inds, dicts, locations, values = makeDicts(params, verbose=False)
 
 output_location = os.path.abspath(params["simulation"]["result_location"])
 if output_location[-1] != '/':
 	output_location += '/'
- 
-inds = [range(len(v)) for v in vals]
-labeled_vals = [zip(i, v) for (i, v) in zip(inds, vals)]
 
 param_files = []
-for p in product(*labeled_vals):
-	
-	labels, values = zip(* p)
+for (idx, d) in zip(inds, dicts):
 
-	suffix = '-'.join([str(l) for l in labels])
+	suffix = '-'.join([str(i) for i in idx])
 	param_files.append('.params-' + suffix + ".json")
 	
-	d = deepcopy(params)
-	for (k, v) in zip(locs, values):
-		for k_sub in k:
-			setDict(d, k_sub, v)
 	setDict(d, ('simulation', 'result_location'), output_location + 'result-' + suffix + '.npz')
 
 	with open(param_files[-1], 'w') as f:
@@ -137,9 +64,8 @@ elif mode == 'test':
 	pass
 
 with open(output_location+'ordering.npz', 'w') as f:
-	np.savez(f, params=np.array(locs, dtype='object'), values=np.array(vals))
+	np.savez(f, params=np.array(locations, dtype='object'), values=np.array(values))
 
-for name in param_files:
-	#subprocess.check_output('rm ' + name, shell=True)
-	pass
-
+if mode != 'test':
+	for name in param_files:
+		subprocess.check_output('rm ' + name, shell=True)
