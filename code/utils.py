@@ -183,6 +183,9 @@ def plotSpikes(spike_times, spike_ids, duration=None, N=None, lines=[], ablated=
     
     for i in xrange(y.shape[0]):
         y[i] -= np.sum(ablated<y[i])
+
+    mask = x<=duration
+    x, y = x[mask], y[mask]
     
     plt.scatter(x, y, s=5, c='k')
     
@@ -237,7 +240,7 @@ def beforeAndAfterPlot(scores_pre, scores_post, inds, labels=None, jitter=None, 
         i1, i2 = inds[i], inds[i+1]
         plt.scatter(np.mean(x[i1:i2]), np.mean(y[i1:i2]), c=c[i], lw=2, s=200, alpha=0.5)
 
-    if extra is not None:
+    if extra:
         plt.scatter(np.mean(x[inds[1]:]), np.mean(y[inds[1]:]), c=c[n], lw=2, s=200, alpha=0.5)
     
     plt.plot([min_val, max_val], [min_val, max_val], 'k--')

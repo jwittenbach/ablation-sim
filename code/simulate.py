@@ -91,6 +91,7 @@ if type(params.network) is Bunch:
 	#create connections
 	np.random.seed(params.connectivity.network_seed)
 	pSyn = params.connectivity.pSyn
+	pSyn[0][0] *= params.connectivity.pcc_factor
 	connections = [[np.where(np.random.rand(N[i], N[j]) < pSyn[i][j]) for j in xrange(len(N))] for i in xrange(len(N))]
 	weights = [[Wcc, Wce, Wci],
 			   [Wec, Wee, Wei],
